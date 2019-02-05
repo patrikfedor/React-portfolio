@@ -1,21 +1,61 @@
 import React from "react";
 
-const input = () => {
+import styles from "../../../css/input.module.css";
+
+const input = props => {
   let inputElement = null;
-  switch (props.inputType) {
+  switch (props.elementType) {
     case "input":
-      inputElement = <input {...props} />;
+      inputElement = (
+        <input
+          className={styles.Input}
+          {...props.elementConfig}
+          value={props.elementValue}
+          onChange={props.changed}
+        />
+      );
       break;
     case "textarea":
-      inputElement = <textarea {...props} />;
+      inputElement = (
+        <textarea
+          className={styles.Input}
+          {...props.elementConfig}
+          value={props.elementValue}
+          onChange={props.changed}
+        />
+      );
       break;
+    case "select":
+      inputElement = (
+        <select
+          className={styles.Input}
+          value={props.elementValue}
+          onChange={props.changed}
+        >
+          {/* dynamically create <option></option> element */}
+          {props.elementConfig.options.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.displayValue}
+            </option>
+          ))}
+        </select>
+      );
+      break;
+
     default:
-      inputElement = <input {...props} />;
+      inputElement = (
+        <input
+          className={styles.Input}
+          {...props.elementConfig}
+          value={props.elementValue}
+          onChange={props.changed}
+        />
+      );
   }
 
   return (
-    <div>
-      <label>{props.label}</label>
+    <div className={styles.Input}>
+      <label className={styles.Label}>{props.label}</label>
       {inputElement}
     </div>
   );
