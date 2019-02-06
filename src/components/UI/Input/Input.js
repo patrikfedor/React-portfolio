@@ -4,11 +4,18 @@ import styles from "../../../css/input.module.css";
 
 const input = props => {
   let inputElement = null;
+  const inputStyles = [styles.Input];
+
+  if (props.invalid && props.shouldValidate && props.touched) {
+    inputStyles.push(styles.Invalid);
+  }
+
   switch (props.elementType) {
     case "input":
       inputElement = (
         <input
-          className={styles.Input}
+          // for className we use .join() to concatenate all styles defined in inputStyles array divided with space
+          className={inputStyles.join(" ")}
           {...props.elementConfig}
           value={props.elementValue}
           onChange={props.changed}
@@ -18,7 +25,7 @@ const input = props => {
     case "textarea":
       inputElement = (
         <textarea
-          className={styles.Input}
+          className={inputStyles.join(" ")}
           {...props.elementConfig}
           value={props.elementValue}
           onChange={props.changed}
@@ -28,7 +35,7 @@ const input = props => {
     case "select":
       inputElement = (
         <select
-          className={styles.Input}
+          className={inputStyles.join(" ")}
           value={props.elementValue}
           onChange={props.changed}
         >
@@ -45,7 +52,7 @@ const input = props => {
     default:
       inputElement = (
         <input
-          className={styles.Input}
+          className={inputStyles.join(" ")}
           {...props.elementConfig}
           value={props.elementValue}
           onChange={props.changed}
@@ -53,10 +60,18 @@ const input = props => {
       );
   }
 
+  let validationError = null;
+  if (props.invalid && props.touched) {
+    validationError = (
+      <p className={styles.ValidationError}>{props.errorMessage}</p>
+    );
+  }
+
   return (
     <div className={styles.Input}>
       <label className={styles.Label}>{props.label}</label>
       {inputElement}
+      {validationError}
     </div>
   );
 };

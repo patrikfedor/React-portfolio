@@ -14,7 +14,13 @@ class ContactForm extends Component {
           type: "text",
           placeholder: "Your Name"
         },
-        elementValue: ""
+        elementValue: "",
+        elementErrorMessage: "Please add valid name and surname.",
+        validation: {
+          required: true
+        },
+        valid: false,
+        touched: false
       },
       street: {
         elementType: "input",
@@ -22,7 +28,13 @@ class ContactForm extends Component {
           type: "text",
           placeholder: "Street"
         },
-        elementValue: ""
+        elementValue: "",
+        elementErrorMessage: "Please add valid street.",
+        validation: {
+          required: true
+        },
+        valid: false,
+        touched: false
       },
       zipCode: {
         elementType: "input",
@@ -30,7 +42,15 @@ class ContactForm extends Component {
           type: "text",
           placeholder: "ZIP Code"
         },
-        elementValue: ""
+        elementValue: "",
+        elementErrorMessage: "Please add valid ZIP CODE e.g: 07205.",
+        validation: {
+          required: true,
+          minLength: 5,
+          maxLength: 5
+        },
+        valid: false,
+        touched: false
       },
       country: {
         elementType: "input",
@@ -38,7 +58,13 @@ class ContactForm extends Component {
           type: "text",
           placeholder: "Country"
         },
-        elementValue: ""
+        elementValue: "",
+        elementErrorMessage: "Please add valid country.",
+        validation: {
+          required: true
+        },
+        valid: false,
+        touched: false
       },
       email: {
         elementType: "input",
@@ -46,7 +72,13 @@ class ContactForm extends Component {
           type: "email",
           placeholder: "Your E-Mail"
         },
-        elementValue: ""
+        elementValue: "",
+        elementErrorMessage: "Please add valid e-mail address.",
+        validation: {
+          required: true
+        },
+        valid: false,
+        touched: false
       },
       deliveryMethod: {
         elementType: "select",
@@ -56,9 +88,12 @@ class ContactForm extends Component {
             { value: "fastest", displayValue: "Fastest" }
           ]
         },
-        elementValue: ""
+        elementValue: "standard",
+        validation: {},
+        valid: true
       }
     },
+    formIsValid: false,
     loading: false
   };
 
@@ -91,6 +126,21 @@ class ContactForm extends Component {
       .catch(error => this.setState({ loading: false }));
   };
 
+  checkValidity(value, rules) {
+    let isValid = true;
+    if (rules.required) {
+      // using trim to remove white spaces
+      isValid = value.trim() !== "" && isValid;
+    }
+    if (rules.minLength) {
+      isValid = value.length >= rules.minLength && isValid;
+    }
+    if (rules.maxLength) {
+      isValid = value.length <= rules.maxLength && isValid;
+    }
+    return isValid;
+  }
+
   inputChangedHandler = (event, inputIdentifier) => {
     //console.log(event.target.value);
     //we need to update state order form value and for that we need to do this immutable by using spread operator [...]
@@ -102,8 +152,19 @@ class ContactForm extends Component {
       ...updatedOrderForm[inputIdentifier]
     };
     updatedFormElement.elementValue = event.target.value;
+    updatedFormElement.valid = this.checkValidity(
+      updatedFormElement.elementValue,
+      updatedFormElement.validation
+    );
+    updatedFormElement.touched = true;
     updatedOrderForm[inputIdentifier] = updatedFormElement;
-    this.setState({ orderForm: updatedOrderForm });
+    //console.log(updatedFormElement);
+    let formIsValid = true;
+    for (let inputIdentifier in updatedOrderForm) {
+      formIsValid = updatedOrderForm[inputIdentifier].valid && formIsValid;
+    }
+    // console.log(formIsValid);
+    this.setState({ orderForm: updatedOrderForm, formIsValid: formIsValid });
   };
 
   render() {
@@ -122,10 +183,16 @@ class ContactForm extends Component {
             elementType={formElement.setup.elementType}
             elementConfig={formElement.setup.elementConfig}
             elementValue={formElement.setup.elementValue}
+            invalid={!formElement.setup.valid}
+            shouldValidate={formElement.setup.validation}
+            touched={formElement.setup.touched}
+            errorMessage={formElement.setup.elementErrorMessage}
             changed={event => this.inputChangedHandler(event, formElement.id)}
           />
         ))}
-        <Button btnType="Success">ORDER</Button>
+        <Button btnType="Success" disabled={!this.state.formIsValid}>
+          ORDER
+        </Button>
       </form>
     );
     if (this.state.loading) {
