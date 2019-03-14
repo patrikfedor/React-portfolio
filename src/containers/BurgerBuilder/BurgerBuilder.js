@@ -8,14 +8,8 @@ import OrderSummary from "../../components/Burger/OrderSummary/OrderSummary";
 import Spinner from "../../components/UI/Spinner/Spinner";
 import withErrorHandler from "../../hoc/withErrorHandler/withErrorHandler";
 import axios from "../../axios-orders";
-
-// Global constants are in all capital letters
-const INGREDIENT_PRICES = {
-  salad: 0.5,
-  cheese: 0.4,
-  meat: 1.3,
-  bacon: 0.7
-};
+import * as actionTypes from "../../store/actions";
+import { connect } from "react-redux";
 
 class BurgerBuilder extends Component {
   // Old way of initializing state, but working too
@@ -25,11 +19,6 @@ class BurgerBuilder extends Component {
   // }
 
   state = {
-    ingredients: null,
-    //base price
-    totalPrice: 5,
-    //use for order now button disabling
-    purchasable: false,
     //use for modal to show or hide
     purchasing: false,
     loading: false,
@@ -37,14 +26,14 @@ class BurgerBuilder extends Component {
   };
 
   componentDidMount() {
-    axios
-      .get("https://react-eatme-app.firebaseio.com/ingredients.json")
-      .then(response => {
-        this.setState({ ingredients: response.data });
-      })
-      .catch(error => {
-        this.setState({ error: true });
-      });
+    // axios
+    //   .get("https://react-eatme-app.firebaseio.com/ingredients.json")
+    //   .then(response => {
+    //     this.setState({ ingredients: response.data });
+    //   })
+    //   .catch(error => {
+    //     this.setState({ error: true });
+    //   });
   }
 
   updatePurchaseState(ingredients) {
@@ -55,44 +44,8 @@ class BurgerBuilder extends Component {
       .reduce((sum, el) => {
         return sum + el;
       }, 0);
-    this.setState({ purchasable: sum > 0 });
+    return sum > 0;
   }
-
-  addIngredientHandler = type => {
-    const oldCount = this.state.ingredients[type];
-    const updatedCount = oldCount + 1;
-    //using spread operator to make copy of our state, to do it in immutable way
-    const updatedIngredients = {
-      ...this.state.ingredients
-    };
-    updatedIngredients[type] = updatedCount;
-    const priceAddition = INGREDIENT_PRICES[type];
-    const oldPrice = this.state.totalPrice;
-    const newPrice = oldPrice + priceAddition;
-
-    this.setState({ totalPrice: newPrice, ingredients: updatedIngredients });
-    this.updatePurchaseState(updatedIngredients);
-  };
-
-  removeIngredientHandeler = type => {
-    const oldCount = this.state.ingredients[type];
-    if (oldCount <= 0) {
-      return;
-    }
-
-    const updatedCount = oldCount - 1;
-    //using spread operator to make copy of our state, to do it in immutable way
-    const updatedIngredients = {
-      ...this.state.ingredients
-    };
-    updatedIngredients[type] = updatedCount;
-    const priceDeduction = INGREDIENT_PRICES[type];
-    const oldPrice = this.state.totalPrice;
-    const newPrice = oldPrice - priceDeduction;
-
-    this.setState({ totalPrice: newPrice, ingredients: updatedIngredients });
-    this.updatePurchaseState(updatedIngredients);
-  };
 
   purchaseHandler = () => {
     this.setState({ purchasing: true });
@@ -103,25 +56,12 @@ class BurgerBuilder extends Component {
   };
 
   purchaseContinueHandler = () => {
-    const queryParameters = [];
-    for (let i in this.state.ingredients) {
-      queryParameters.push(
-        encodeURIComponent(i) +
-          "=" +
-          encodeURIComponent(this.state.ingredients[i])
-      );
-    }
-    queryParameters.push("price=" + this.state.totalPrice);
-    const queryString = queryParameters.join("&");
-    this.props.history.push({
-      pathname: "/checkout",
-      search: "?" + queryString
-    });
+    this.props.history.push("/checkout");
   };
 
   render() {
     const disabledInfo = {
-      ...this.state.ingredients
+      ...this.props.ingrds
     };
     for (let key in disabledInfo) {
       disabledInfo[key] = disabledInfo[key] <= 0;
@@ -133,26 +73,26 @@ class BurgerBuilder extends Component {
       <Spinner />
     );
 
-    if (this.state.ingredients) {
+    if (this.props.ingrds) {
       burger = (
         <Aux>
-          <Burger ingredients={this.state.ingredients} />
+          <Burger ingredients={this.props.ingrds} />
           <BuildControls
-            ingredientAdded={this.addIngredientHandler}
-            ingredientRemoved={this.removeIngredientHandeler}
+            ingredientAdded={this.props.onIngredientAdded}
+            ingredientRemoved={this.props.onIngredientRemoved}
             disabled={disabledInfo}
-            purchasable={this.state.purchasable}
+            purchasable={this.updatePurchaseState(this.props.ingrds)}
             ordered={this.purchaseHandler}
-            price={this.state.totalPrice}
+            price={this.props.price}
           />
         </Aux>
       );
       orderSummary = (
         <OrderSummary
-          ingredients={this.state.ingredients}
+          ingredients={this.props.ingrds}
           purchaseCancelled={this.purchaseCancelHandler}
           purchaseContinued={this.purchaseContinueHandler}
-          price={this.state.totalPrice}
+          price={this.props.price}
         />
       );
     }
@@ -174,4 +114,25 @@ class BurgerBuilder extends Component {
   }
 }
 //use our error handler hoc as a function, not as a wrapper like an Aux
-export default withErrorHandler(BurgerBuilder, axios);
+// we can use more wrapping component, as we have spread props in our withErrorHandler wrapper
+
+const mapStateToProps = state => {
+  return {
+    ingrds: state.ingredients,
+    price: state.totalPrice
+  };
+};
+
+const mapDispatchToProps = dispatch => {
+  return {
+    onIngredientAdded: ingName =>
+      dispatch({ type: actionTypes.ADD_INGREDIENT, ingredientName: ingName }),
+    onIngredientRemoved: ingName =>
+      dispatch({ type: actionTypes.REMOVE_INGREDIENT, ingredientName: ingName })
+  };
+};
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(withErrorHandler(BurgerBuilder, axios));
